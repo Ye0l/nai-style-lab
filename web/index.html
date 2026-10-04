@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NAI Style Lab</title>
+<!-- PNGs so the taskbar gets a sharp icon (it does not scale the SVG well) -->
+<link rel="icon" type="image/png" sizes="512x512" href="/static/icon-512.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/static/icon-32.png">
+<link rel="icon" type="image/svg+xml" href="/static/icon.svg">
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<div id="app">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="main">
+    <header class="topbar" id="topbar"></header>
+    <div class="progress-line" id="progress-line"><span></span></div>
+    <main class="content" id="content" tabindex="-1"></main>
+  </div>
+</div>
+<div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+<div id="overlay-root"></div>
+<script type="module" src="/static/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+# Must stay at the repo root: git applies a .gitignore only to its own folder and below.
+# A leading / matches at the root only.
+
+# API key, ranking state and generated images: never published.
+/data/
+# Embedded Python, made by _dev\setup_python.bat; ships only in the release zip.
+/python/
+# Release zip, uploaded to GitHub Releases instead.
+/_dev/release/
+# An update being installed (download, new release, old files): removed at the next launch.
+/.update/
+__pycache__/
