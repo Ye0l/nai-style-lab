@@ -43,7 +43,7 @@ def code_version():
 
 
 def tell(text):
-    ctypes.windll.user32.MessageBoxW(None, text, 'NAI Style Lab', 0x40)  # MB_ICONINFORMATION
+    ctypes.windll.user32.MessageBoxW(None, text, 'NAI Style Lab', 0x40 | 0x10000)  # MB_ICONINFORMATION | MB_SETFOREGROUND
 
 
 def _is_app_process(pid):
@@ -84,7 +84,7 @@ def legacy_running():
 
 class Instance:
     """Answers a second launch over a named pipe: no network, and only a holder of the key (in the lock file,
-    which only this Windows user can read) gets through. ``focus`` shows the window, ``bye`` closes it."""
+    which only this Windows user can read) gets through. ``ping`` says it is running, ``bye`` closes it."""
 
     def __init__(self, app):
         self.address = rf'\\.\pipe\nai-style-lab-{uuid.uuid4().hex}'
@@ -100,9 +100,7 @@ class Instance:
                     if self.closed.is_set() or not conn.poll(5):
                         continue
                     message = conn.recv_bytes(16)
-                    if message == b'focus':
-                        if app.focus:
-                            app.focus()
+                    if message == b'ping':
                         reply = {'ok': True}
                     elif message == b'bye':
                         reply = app.retire()
@@ -143,7 +141,8 @@ def _ask(info, message, timeout=5):
 
 
 def hand_over():
-    """True if the app is already running for this data folder; its window is then brought to the front.
+    """True if the app is already running for this data folder: this launch then says so and opens nothing
+    (two apps on one data folder would overwrite each other's saves).
 
     One running older code closes instead (unless it is generating), so this launch starts on the new code.
     """
@@ -165,11 +164,10 @@ def hand_over():
                 if not LOCK_FILE.exists():
                     return False
                 time.sleep(0.1)
-    try:  # this launch was started by the user, so it may hand the right to come to the front on
-        ctypes.windll.user32.AllowSetForegroundWindow(int(info.get('pid')))
-    except Exception:
-        pass
-    return _ask(info, b'focus') is not None
+    if _ask(info, b'ping') is None:  # not running: a lock file left by a crash
+        return False
+    tell('NAI Style Lab이 이미 실행 중입니다.')
+    return True
 
 
 class _PropertyKey(ctypes.Structure):
@@ -274,7 +272,7 @@ def serve_files(window, app):
 
 
 def open_window(app):
-    """Show the app window and block until it is closed. Gives ``app`` its Save As, Open, focus, close and drag."""
+    """Show the app window and block until it is closed. Gives ``app`` its Save As, Open, close and drag."""
     import webview
 
     # screen= places it at the screen's centre: pywebview's own centring is ignored, so Windows would cascade each
@@ -307,16 +305,9 @@ def open_window(app):
 
         form.BeginInvoke(Action(drag))
 
-    def focus():
-        user32 = ctypes.windll.user32
-        hwnd = window.native.Handle.ToInt64()
-        if user32.IsIconic(hwnd):
-            user32.ShowWindow(hwnd, 9)  # SW_RESTORE
-        user32.SetForegroundWindow(hwnd)
-
     app.save_dialog = lambda name: file_dialog(webview.FileDialog.SAVE, save_filename=name)
     app.open_dialog = lambda: file_dialog(webview.FileDialog.OPEN)
-    app.focus, app.close_window, app.start_drag = focus, window.destroy, start_drag
+    app.close_window, app.start_drag = window.destroy, start_drag
     window.events.before_show += lambda: serve_files(window, app)
     window.events.shown += lambda: name_taskbar_button(window.native.Handle.ToInt64())
     window.events.shown += lambda: fit_page(window.native.Handle.ToInt64(), page_w, page_h)

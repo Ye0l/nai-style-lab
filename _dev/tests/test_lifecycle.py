@@ -33,12 +33,11 @@ class Offline(main.Updater):
 
 
 def start(data):
-    opened, focused, closed = [], [], threading.Event()
+    opened, closed = [], threading.Event()
     main.Updater = Offline
 
     def fake_window(app):  # what open_window does, minus the real window: hooks, then block until closed
         opened.append(app)
-        app.focus = lambda: focused.append(True)
         app.close_window = closed.set
         closed.wait(15)
 
@@ -52,24 +51,26 @@ def start(data):
             break
         time.sleep(0.05)
     assert opened, 'the window opened'
-    return runner, opened[0], focused, closed
+    return runner, opened[0], closed
 
 
 def main_test():
     with tempfile.TemporaryDirectory() as tmp:
         data = Path(tmp)
         ports_before = listening_ports()
-        runner, app, focused, closed = start(data)
+        told = []
+        main.tell = told.append
+        runner, app, closed = start(data)
         assert main.LOCK_FILE.exists()
         info = json.loads(main.LOCK_FILE.read_text(encoding='utf-8'))
         assert info['pipe'].startswith('\\\\.\\pipe\\') and len(info['key']) == 64 and 'port' not in info
         assert listening_ports() == ports_before, 'no port: nothing to reach from a browser or another PC'
         assert json.loads(app.call('GET', '/api/status'))['ok'], 'the window talks to the engine directly'
 
-        assert main.hand_over() and focused, 'a second launch brings the running window to the front instead'
-        assert runner.is_alive()
+        assert main.hand_over() and told == ['NAI Style Lab이 이미 실행 중입니다.'], 'a second launch says so, opens nothing'
+        assert runner.is_alive() and not closed.is_set(), 'the running app carries on'
         wrong = dict(info, key='00' * 32)
-        assert main._ask(wrong, b'focus', timeout=1) is None and len(focused) == 1, 'without the key: nothing'
+        assert main._ask(wrong, b'ping', timeout=1) is None, 'without the key: nothing'
         assert main._ask(info, b'nonsense') == {'error': 'unknown'} and runner.is_alive()
 
         real_version = main.code_version
@@ -83,7 +84,7 @@ def main_test():
         assert not runner.is_alive(), 'closing the window ends the app'
         assert not main.LOCK_FILE.exists() and (data / 'state.json').exists(), 'state saved, lock removed'
         assert not main.hand_over()
-        assert main._ask(info, b'focus', timeout=1) is None, 'a closed app answers nothing'
+        assert main._ask(info, b'ping', timeout=1) is None, 'a closed app answers nothing'
 
         # A lock file left by a crash: the next launch starts as usual.
         main.LOCK_FILE.write_text(json.dumps(info), encoding='utf-8')
@@ -93,8 +94,7 @@ def main_test():
         main.LOCK_FILE.unlink()
 
         # An older version (it ran a local server) still open on this data: say so and do not start.
-        told = []
-        main.tell = told.append
+        told.clear()
         legacy = data / main.LEGACY_LOCK
         legacy.write_text(json.dumps({'port': 1, 'pid': os.getpid(), 'token': 'x'}), encoding='utf-8')
         assert main.hand_over() and told and legacy.exists(), 'two apps never write the same data'
@@ -118,12 +118,12 @@ def main_test():
         legacy.unlink(missing_ok=True)
 
         # A second run on the same folder works the same (the pipe name is new each time).
-        runner, app, focused, closed = start(data)
-        assert main.hand_over() and focused
+        runner, app, closed = start(data)
+        assert main.hand_over() and told[-1] == 'NAI Style Lab이 이미 실행 중입니다.'
         closed.set()
         runner.join(timeout=5)
         assert not runner.is_alive() and not main.LOCK_FILE.exists()
-    print('PASS: one window, no port, single instance (focus), newer code takes over, close saves and exits, '
+    print('PASS: one window, no port, single instance (says so, opens nothing), newer code takes over, close saves and exits, '
           'older version still open.')
 
 

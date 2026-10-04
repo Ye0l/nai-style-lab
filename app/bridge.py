@@ -45,9 +45,9 @@ mimetypes.add_type('image/svg+xml', '.svg')
 class App:
     def __init__(self, engine: Engine, log_file: Path | None = None):
         self.engine = engine
-        # Set by main.py from the app window: Save As (zip name -> path or None), Open (-> path or None), bring
-        # to front, close, and a file drag out of the window (path). updater: an updater.Updater.
-        self.save_dialog = self.open_dialog = self.focus = self.close_window = self.start_drag = None
+        # Set by main.py from the app window: Save As (zip name -> path or None), Open (-> path or None), close,
+        # and a file drag out of the window (path). updater: an updater.Updater.
+        self.save_dialog = self.open_dialog = self.close_window = self.start_drag = None
         self.updater = None
         self.log_file = log_file
         self.thumb_lock = threading.Lock()  # held while one is made
