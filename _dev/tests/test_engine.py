@@ -341,6 +341,9 @@ def guards():
         for bad in ({'gen_min': 9}, {'steps': 0}, {'cfg': float('nan')}, {'model': 'nope'}, {'arena_blind': 'false'}, {'auto_evolution': True}):
             refuses(engine.update_settings, bad)
         assert engine.settings()['gen_min'] == 3 and engine.settings()['steps'] == 28 and engine.settings()['arena_blind'] is False
+        engine.state['ui_state']['size'] = '세로 960x1088'  # saved by an older release that still offered it
+        assert engine.settings()['size'] == engine_module.SETTING_DEFAULTS['size'], 'a dropped choice falls back to the default'
+        del engine.state['ui_state']['size']
 
         # ---- errors that are not retried or auth still stop the job after a short streak
         fake.fail_status = 400

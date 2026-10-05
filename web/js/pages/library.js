@@ -69,20 +69,39 @@ function render() {
         h('div', { style: { flex: 1, minHeight: 0 } }, artistTable()),  // the table takes whatever height the window has left
         tableBar()),
       card({ icon: 'sparkle', tone: 'sky', title: '무작위 조합 만들기', desc: '등록한 작가 중 몇 명을 골라 가중치를 붙인 조합을 만들고, 바로 그림을 생성합니다.' },
-        h('div', { class: 'grid', style: { gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '16px' } },
-          rule('조합당 작가', `${settings.gen_min}~${settings.gen_max}명`),
-          rule('가중치 범위', `${settings.global_min_w}~${settings.global_max_w}`),
-          rule('시드', settings.seed || '첫 생성 때 정함')),
+        h('div', { class: 'grid', style: { gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '16px' } },
+          rule('조합당 작가 수', pair(ruleInput('gen_min'), ruleInput('gen_max'))),
+          rule('가중치 범위', pair(ruleInput('global_min_w', 0.1), ruleInput('global_max_w', 0.1))),
+          rule('시드', h('div', { class: 'input-group' }, ruleInput('seed', null),
+            h('button', { class: 'btn sm', onclick: () => saveRule('seed', String(Math.floor(Math.random() * app.meta.max_seed))) }, icon('refresh'), '무작위')),
+          { gridColumn: 'span 2' })),
         h('div', { class: 'row' }, h('span', { class: 'field-label' }, '만들 개수'), count, h('span', { class: 'spacer' }),
           h('button', { class: 'btn primary lg', disabled: working, onclick: () => generate(Number(view.countDraft ?? settings.gen_count)) }, icon('zap'), working ? '생성 중…' : '만들기')),
         h('p', { class: 'note' },
-          '처음이라면 20개로 시작하세요. 규칙은 설정 → 조합 규칙에서 바꿀 수 있고, 진화와 다듬기도 같은 규칙을 따릅니다.'),
-        h('button', { class: 'btn ghost sm', style: { marginTop: '6px' }, onclick: () => app.go('settings') }, icon('settings'), '조합 규칙 바꾸기'))));
+          '작가 수와 가중치 범위는 진화와 다듬기에도 그대로 적용됩니다.'))));
 }
 
-function rule(label, value) {
-  return h('div', { style: { background: 'var(--surface-2)', borderRadius: '10px', padding: '10px 12px' } },
-    h('div', { class: 'note' }, label), h('div', { class: 'num', style: { fontWeight: 700, marginTop: '2px', wordBreak: 'break-all' } }, value));
+function rule(label, value, style) {
+  return h('div', { style: { background: 'var(--surface-2)', borderRadius: '10px', padding: '10px 12px', ...style } },
+    h('div', { class: 'note' }, label), h('div', { style: { marginTop: '6px' } }, value));
+}
+
+const pair = (a, b) => h('div', { class: 'range-pair' }, a, h('span', {}, '~'), b);
+
+// The combo rules and the seed are edited here, where combos are made: saved when the field is left (or Enter);
+// a refused value is shown in the error toast and the field goes back to what is saved. step null: the seed
+// (text: it may be empty, which draws one on the first image).
+function ruleInput(key, step = 1) {
+  const seed = step == null;
+  return h('input', { class: 'input num', ...(seed ? { inputmode: 'numeric', placeholder: '비우면 무작위' } : { type: 'number', step, ...limits(key) }),
+    value: app.settings[key],
+    onchange: (e) => saveRule(key, seed ? e.currentTarget.value.trim() : Number(e.currentTarget.value)),
+    onkeydown: (e) => { if (e.key === 'Enter') e.currentTarget.blur(); } });
+}
+
+async function saveRule(key, value) {
+  await app.act(post('/api/settings', { changes: { [key]: value } }), '저장했습니다.').catch(() => {});
+  render();
 }
 
 async function load() {

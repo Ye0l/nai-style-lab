@@ -22,7 +22,7 @@ NAI_GEN_HOST = 'image.novelai.net'
 NAI_GEN_PATH = '/ai/generate-image'
 MODELS = ['nai-diffusion-5-full', 'nai-diffusion-5-curated', 'nai-diffusion-4-5-full', 'nai-diffusion-4-5-curated', 'nai-diffusion-4-full']
 
-SIZE_PRESETS = {'세로 832x1216': (832, 1216), '정방형 1024x1024': (1024, 1024), '가로 1216x832': (1216, 832), '세로 960x1088': (960, 1088)}
+SIZE_PRESETS = {'세로 832x1216': (832, 1216), '정방형 1024x1024': (1024, 1024), '가로 1216x832': (1216, 832)}
 
 DEFAULT_ADVANCED_PARAMS = {'noise_schedule': 'karras', 'ucPreset': 0, 'qualityToggle': True, 'dynamic_thresholding': False, 'dynamic_thresholding_percentile': 0.999, 'dynamic_thresholding_mimic_scale': 10, 'legacy': False, 'legacy_v3_extend': False, 'sm': False, 'sm_dyn': False, 'skip_cfg_above_sigma': 58, 'skip_cfg_below_sigma': 0, 'deliberate_euler_ancestral_bug': False, 'prefer_brownian': True, 'cfg_sched_eligibility': 'enable_for_post_summer_samplers', 'explike_fine_detail': False, 'minimize_sigma_inf': False, 'uncond_per_vibe': True, 'wonky_vibe_correlation': True}
 

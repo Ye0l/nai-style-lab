@@ -1,4 +1,4 @@
-// 설정 — everything saves as you type. One set of rules drives random combos, evolution and refinement.
+// 설정 — everything saves as you type. The combo rules are edited on 작가 · 조합 만들기.
 import { get, post, keepDraft } from '../api.js';
 import { h, morph, limits, icon, toast, fmt, confirmDialog, promptDialog, pageHead, card } from '../ui.js';
 
@@ -97,7 +97,7 @@ function connection() {
 
 function generation() {
   const meta = app.meta;
-  const seed = h('input', { class: 'input num', value: s().seed, placeholder: '비워 두면 첫 생성 때 무작위로 정해 저장', inputmode: 'numeric',
+  const seed = h('input', { class: 'input num', value: s().seed, placeholder: '비우면 무작위', inputmode: 'numeric',
     onchange: (e) => save('seed', e.currentTarget.value.trim()) });
   return section('image', 'sky', '이미지 생성', '모든 그림(무작위 조합, 진화 조합, 다듬기, 자유 생성)이 이 설정과 하나의 시드로 그려집니다.',
     h('div', { class: 'grid', style: { gridTemplateColumns: 'repeat(3, 1fr)' } },
@@ -110,20 +110,7 @@ function generation() {
       field('생성 간 대기 (초)', number('delay', { step: 0.5 })),
       h('div', { class: 'field', style: { gridColumn: 'span 2' } }, h('label', {}, '시드'),
         h('div', { class: 'input-group' }, seed,
-          h('button', { class: 'btn', onclick: () => { save('seed', String(Math.floor(Math.random() * meta.max_seed))); render(); } }, icon('refresh'), '무작위'),
-          h('button', { class: 'btn ghost', onclick: () => { save('seed', ''); render(); } }, '비우기')),
-        h('div', { class: 'help' }, '같은 시드로 그려야 그림체 차이만 비교됩니다. 바꾸면 이후 그림부터 적용됩니다.'))));
-}
-
-function rules() {
-  const pair = (a, b) => h('div', { class: 'range-pair' }, a, h('span', {}, '~'), b);
-  return section('sliders', 'amber', '조합 규칙', '무작위 조합, 진화 조합, 다듬기 변형 모두 이 범위를 벗어나지 않습니다.',
-    h('div', { class: 'grid', style: { gridTemplateColumns: 'repeat(2, 1fr)' } },
-      field('조합당 작가 수', pair(number('gen_min'), number('gen_max'))),
-      field('가중치 범위', pair(number('global_min_w', { step: 0.1 }), number('global_max_w', { step: 0.1 }))),
-      field('무작위 조합 기본 개수', number('gen_count')),
-      field('진화 조합 수', number('evo_count')),
-      field('다듬기 라운드당 변형', number('improve_variants'))));
+          h('button', { class: 'btn', onclick: () => { save('seed', String(Math.floor(Math.random() * meta.max_seed))); render(); } }, icon('refresh'), '무작위')))));
 }
 
 function prompts() {
@@ -251,7 +238,7 @@ function render() {
     h('div', { class: 'stack', style: { gap: '16px' } }, left), h('div', { class: 'stack', style: { gap: '16px' } }, right));
   const body = tab === 'prompts' ? named(prompts(), 'prompts')
     : tab === 'data' ? columns([update(), data()], resets())
-    : columns([named(connection(), 'connection'), rules()], generation());
+    : columns([named(connection(), 'connection')], generation());
   morph(root,
     pageHead({ title: '설정', desc: '바꾸면 바로 저장됩니다.',
       below: h('div', { class: 'segmented', role: 'tablist', 'aria-label': '설정 항목', style: { marginTop: '14px' } },

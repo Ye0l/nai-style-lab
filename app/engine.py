@@ -37,7 +37,7 @@ SETTING_DEFAULTS = {
     'model': core.MODELS[0], 'size': list(core.SIZE_PRESETS)[0], 'sampler': core.SAMPLERS[0],
     'steps': 28, 'cfg': 5.0, 'cfg_rescale': 0.0, 'delay': 1.0, 'seed': '',
     'global_min_w': 0.8, 'global_max_w': 1.8, 'gen_min': 4, 'gen_max': 8,
-    'gen_count': 20, 'evo_count': 20, 'improve_variants': 4,
+    'gen_count': 50, 'evo_count': 20, 'improve_variants': 4,
     'base_prompt': core.DEFAULT_BASE_PROMPT, 'character_prompt': [], 'negative': core.DEFAULT_NEGATIVE,
     'arena_mode': 'auto', 'arena_blind': False,
     'prompt_checked': False, 'artists_checked': False,
@@ -137,7 +137,11 @@ class Engine:
 
     def settings(self):
         ui = self.state['ui_state']
-        return {key: ui.get(key, default) for key, default in SETTING_DEFAULTS.items()}
+        s = {key: ui.get(key, default) for key, default in SETTING_DEFAULTS.items()}
+        for key, choices in SETTING_CHOICES.items():
+            if s[key] not in choices:  # a choice a later release dropped (the 960x1088 size): back to the default
+                s[key] = SETTING_DEFAULTS[key]
+        return s
 
     def update_settings(self, changes: dict):
         with self.lock:
@@ -1580,7 +1584,7 @@ class Engine:
             elif not checklist['prompt']:
                 todo = ('모든 그림에 쓰일 프롬프트를 확인하세요. 기본값 그대로 써도 됩니다.', 'settings', '프롬프트 확인')
             else:
-                todo = ('첫 무작위 조합을 만들어 보세요. 20개면 충분합니다.', 'library', '조합 만들기')
+                todo = ('첫 무작위 조합을 만들어 보세요.', 'library', '조합 만들기')
         elif imp:
             step = 4 if imp['status'] in ('final_check', 'final_ready') else 3
             if imp['status'] == 'final_ready':
