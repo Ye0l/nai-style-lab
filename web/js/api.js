@@ -1,13 +1,15 @@
-// The page's one way into Python: the app window's own channel (pywebview), no server and no network.
-// Python answers {ok, data} or {ok: false, error} as JSON text (app/bridge.py, App.call).
-const ready = window.pywebview?.api?.call ? Promise.resolve()
+// Tauri IPC on Linux, pywebview on the original Windows launcher. No listening server.
+// Both return the same {ok, data} / {ok: false, error} envelope from app/bridge.py.
+const ready = window.__TAURI__?.core?.invoke || window.pywebview?.api?.call ? Promise.resolve()
   : new Promise((resolve) => window.addEventListener('pywebviewready', resolve, { once: true }));
 
 async function call(method, path, body = null) {
   await ready;
   let payload = null;
   try {
-    payload = JSON.parse(await window.pywebview.api.call(method, path, body));
+    payload = window.__TAURI__?.core?.invoke
+      ? await window.__TAURI__.core.invoke('call', { method, path, body })
+      : JSON.parse(await window.pywebview.api.call(method, path, body));
   } catch (error) {
     throw new Error(`앱 내부 오류가 났습니다: ${error?.message || error}`);
   }

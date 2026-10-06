@@ -252,7 +252,7 @@ export function lightbox(src) {
   // a real file drag (main.py) in place of the page's own.
   const img = h('img', { src, alt: '', ondragstart: (e) => {
     e.preventDefault();
-    post('/api/drag', { file: src.split('/').pop() }).catch(() => {});
+    post('/api/drag', { file: src.split('/').pop() }).catch((error) => toast(error.message, 'error'));
   } });
   const box = h('div', { class: 'lightbox', onclick: close }, img);
   document.addEventListener('keydown', onKey, true);
@@ -346,7 +346,10 @@ export function finalBadge(combo) {
 }
 
 export function copyText(text, label = '태그를 복사했습니다.') {
-  return navigator.clipboard.writeText(text).then(() => toast(label, 'ok', 2200),
+  const write = window.__TAURI__?.core?.invoke
+    ? window.__TAURI__.core.invoke('write_clipboard', { text })
+    : navigator.clipboard.writeText(text);
+  return write.then(() => toast(label, 'ok', 2200),
     () => toast('클립보드에 복사하지 못했습니다.', 'error'));
 }
 

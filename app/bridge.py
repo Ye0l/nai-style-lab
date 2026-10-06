@@ -8,6 +8,8 @@ import json
 import mimetypes
 import os
 import queue
+import subprocess
+import sys
 import threading
 import time
 import traceback
@@ -33,7 +35,11 @@ class NotFound(Exception):
 def open_external(target):
     """Open a file, folder or URL with its usual program. The app window belongs to this process, so what
     it starts may come to the front."""
-    os.startfile(target)
+    if sys.platform == 'win32':
+        os.startfile(target)
+    else:
+        subprocess.Popen(['open' if sys.platform == 'darwin' else 'xdg-open', target],
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
 mimetypes.add_type('text/javascript', '.js')

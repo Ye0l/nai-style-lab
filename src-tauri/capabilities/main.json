@@ -1,0 +1,6 @@
+{
+  "identifier": "main", "description": "Local application window only",
+  "windows": ["main"], "local": true,
+  "remote": {"urls": ["nai://localhost/*"]},
+  "permissions": ["core:default"]
+}

@@ -2,7 +2,68 @@
 
 NovelAI 작가 태그 조합을 만들고, 둘 중 마음에 드는 쪽을 고르는 것만으로 내 취향의 그림체를 찾아 다듬는 앱입니다.
 
-## 실행
+## Linux · Tauri 2
+
+Linux 포크는 기존 HTML/JS 화면과 Python 생성·순위 엔진을 Tauri 2 창에서 실행합니다.
+로컬 HTTP 서버 없이 Tauri IPC와 자식 프로세스의 stdin/stdout으로 통신합니다.
+Windows 원본 실행 방식은 아래에 그대로 남아 있습니다.
+
+### 개발 실행
+
+Rust stable, Node.js 22+, Python 3.10+이 필요합니다.
+
+Ubuntu 22.04/24.04:
+
+```sh
+sudo apt-get update
+sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential libssl-dev librsvg2-dev patchelf python3-venv xdg-utils
+```
+
+Arch Linux:
+
+```sh
+sudo pacman -S --needed rust nodejs npm python webkit2gtk-4.1 base-devel openssl librsvg patchelf xdg-utils
+```
+
+```sh
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements-linux.txt
+npm ci
+NAI_PYTHON="$PWD/.venv/bin/python" npm run dev
+```
+
+### 패키지 빌드
+
+```sh
+npm run build -- --bundles deb
+# AppImage: npm run build -- --bundles appimage
+```
+
+결과는 `src-tauri/target/release/bundle/`에 생성됩니다. Debian 패키지는 시스템
+Python/Pillow/xdg-utils에 의존합니다. AppImage도 Python을 내장하지 않으므로
+실행할 시스템에 Python 3.10+ 및 Pillow가 있어야 합니다. 다른 Python을 쓰려면
+실행 시 `NAI_PYTHON`에 해당 인터프리터의 절대 경로를 지정하세요.
+
+### 데이터와 지원 범위
+
+- 기본 데이터: `$XDG_DATA_HOME/net.yeol.nai-style-lab/` (미설정 시 `~/.local/share/net.yeol.nai-style-lab/`).
+- 기존 `data/`를 그대로 사용하려면 `NAI_DATA_DIR=/절대/경로/data NAI_PYTHON="$PWD/.venv/bin/python" npm run dev`.
+  또는 기존 앱에서 ZIP으로 내보낸 뒤 Linux 앱에서 불러오세요.
+- 같은 데이터 경로를 사용하는 Linux 앱 두 개의 동시 실행은 파일 잠금으로 차단합니다.
+- 생성·대결·진화·다듬기·태그 복사·원본/폴더 열기·ZIP 내보내기/불러오기와 종료 시 저장을 유지합니다.
+- Windows 릴리스 ZIP 자동 설치는 차단합니다. Linux 패키지를 설치하거나 소스를 git으로 갱신하세요.
+- 창 밖으로 PNG 파일을 끌어내는 기능은 미지원입니다. 원본 열기 또는 폴더 열기를 사용하세요.
+- 일반 브라우저에서 여는 독립 웹 서버 모드는 제공하지 않습니다.
+
+```sh
+python3 _dev/tests/test_core.py
+python3 _dev/tests/test_bridge.py
+python3 _dev/tests/test_tauri_backend.py
+```
+
+GitHub Actions `Linux Tauri`에서 위 검사 및 `.deb` 빌드를 실행하고 설치 파일을 artifact로 남깁니다.
+
+## Windows 원본 실행
 
 `run.bat`을 더블클릭하면 창이 열립니다. 창을 닫으면 저장 후 자동으로 종료됩니다.
 이미지 생성 중에 창을 닫으면 진행 중인 생성은 기다리지 않고 멈춥니다. 이미 NovelAI에 보낸 한 장의 결과는 받지 못하고 버려지며, 그때까지 만든 것은 저장됩니다.
