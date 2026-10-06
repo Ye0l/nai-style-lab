@@ -1,5 +1,6 @@
 // 설정 — everything saves as you type. The combo rules are edited on 작가 · 조합 만들기.
 import { get, post, keepDraft } from '../api.js';
+import { isBrowser } from '../api.js';
 import { h, morph, limits, icon, toast, fmt, confirmDialog, promptDialog, pageHead, card } from '../ui.js';
 
 // The settings themselves are app.conf (one copy for every page). showKey: the API key shown in clear.
@@ -83,7 +84,7 @@ function connection() {
       sub.remaining_percent != null ? h('span', { class: 'badge' }, `잔여 ${sub.remaining_percent}%`) : null,
       sub.estimate ? h('span', { class: 'badge mint' }, `예상 ${fmt(sub.estimate.left)} / ${fmt(sub.estimate.total)}장`) : null,
       h('span', { class: 'note' }, `${sub.checked} 조회`));
-  return section('key', '', 'NovelAI 연결', 'API 키는 이 컴퓨터의 data 폴더에 저장되고, 데이터 내보내기 zip에도 들어갑니다. 폴더나 zip을 남에게 줄 때는 조심하세요.',
+  return section('key', '', 'NovelAI 연결', `API 키는 ${isBrowser ? '서버의 데이터 폴더' : '이 컴퓨터의 data 폴더'}에 저장되고, 데이터 내보내기 zip에도 들어갑니다. 폴더나 zip을 남에게 줄 때는 조심하세요.`,
     field('API 키', h('div', { class: 'input-group' }, key, reveal,
       h('button', { class: 'btn primary', onclick: () => saveKey(root.querySelector('#api-key').value) }, '조회'))),
     h('div', { class: 'row', style: { marginTop: '10px' } }, subView),
@@ -140,6 +141,8 @@ function prompts() {
 // release, closes the app and starts the new version; data/ is never touched (a new data format is upgraded at its
 // first launch, the old file kept).
 function update() {
+  if (isBrowser) return section('download', 'sky', '버전', `v${app.meta.version}`,
+    h('p', { class: 'note' }, '웹 앱은 서버 업데이트 때 새 버전이 반영됩니다.'));
   const u = app.status?.update;
   if (!u) return null;
   const installing = ['downloading', 'preparing', 'restarting'].includes(u.state);
@@ -170,9 +173,9 @@ async function installUpdate() {
 }
 
 function data() {
-  return section('folder', 'mint', '데이터', app.meta.data_dir,
+  return section('folder', 'mint', '데이터', isBrowser ? '서버에 저장된 데이터를 ZIP 파일로 백업하거나 복원합니다.' : app.meta.data_dir,
     h('div', { class: 'row wrap' },
-      h('button', { class: 'btn', onclick: () => app.act(post('/api/open-folder')) }, icon('folder'), '데이터 폴더 열기'),
+      isBrowser ? null : h('button', { class: 'btn', onclick: () => app.act(post('/api/open-folder')) }, icon('folder'), '데이터 폴더 열기'),
       h('button', { class: 'btn', onclick: exportData }, icon('download'), '데이터 내보내기'),
       h('button', { class: 'btn', onclick: importData }, icon('upload'), '데이터 불러오기')),
     h('p', { class: 'note' },
@@ -182,7 +185,7 @@ function data() {
 // Python shows Windows' Save As over this window and writes the zip there (path null: cancelled).
 async function exportData() {
   const { path } = await app.act(post('/api/data/export'));
-  if (path) toast(`데이터를 내보냈습니다: ${path}`, 'ok');
+  if (path) toast(isBrowser ? '백업 ZIP 파일을 다운로드했습니다.' : `데이터를 내보냈습니다: ${path}`, 'ok');
 }
 
 // Windows' Open picks the zip (null: cancelled); Python reads that file itself, so only its name comes back here.

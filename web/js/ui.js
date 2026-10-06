@@ -1,5 +1,6 @@
 // Small UI toolkit: DOM builder, icons, toasts, dialogs, lightbox, tooltips and shared pieces.
 import { post } from './api.js';
+import { isBrowser } from './api.js';
 
 // ---------------------------------------------------------------- DOM
 // h() builds an element. Its handlers go through listen() and the properties it sets are remembered
@@ -251,6 +252,7 @@ export function lightbox(src) {
   // Dragged out of the app (to Explorer, a chat, an editor), the picture goes as its PNG file: the window starts
   // a real file drag (main.py) in place of the page's own.
   const img = h('img', { src, alt: '', ondragstart: (e) => {
+    if (isBrowser) return;
     e.preventDefault();
     post('/api/drag', { file: src.split('/').pop() }).catch((error) => toast(error.message, 'error'));
   } });
@@ -259,8 +261,17 @@ export function lightbox(src) {
   root.append(box);
 }
 
-export function openOriginal(combo) {
-  return run(post('/api/open', combo.id ? { id: combo.id } : { file: combo.file }));
+export async function openOriginal(combo) {
+  const popup = isBrowser ? window.open('', '_blank') : null;
+  if (popup) popup.opener = null;
+  try {
+    const result = await run(post('/api/open', combo.id ? { id: combo.id } : { file: combo.file }));
+    if (isBrowser && result?.url) {
+      if (popup) popup.location.href = result.url;
+      else toast('원본을 열려면 팝업을 허용하세요.', 'error');
+    }
+    return result;
+  } catch (error) { popup?.close(); throw error; }
 }
 
 // ---------------------------------------------------------------- multi-select (작가 표, 그림체 목록)
@@ -348,7 +359,13 @@ export function finalBadge(combo) {
 export function copyText(text, label = '태그를 복사했습니다.') {
   const write = window.__TAURI__?.core?.invoke
     ? window.__TAURI__.core.invoke('write_clipboard', { text })
-    : navigator.clipboard.writeText(text);
+    : navigator.clipboard?.writeText ? navigator.clipboard.writeText(text) : new Promise((resolve, reject) => {
+      const input = document.createElement('textarea'); input.value = text;
+      input.style.cssText = 'position:fixed;left:-9999px;top:0'; document.body.append(input);
+      input.select(); input.setSelectionRange(0, text.length);
+      const ok = document.execCommand('copy'); input.remove();
+      ok ? resolve() : reject(new Error('복사 실패'));
+    });
   return write.then(() => toast(label, 'ok', 2200),
     () => toast('클립보드에 복사하지 못했습니다.', 'error'));
 }

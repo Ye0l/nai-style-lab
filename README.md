@@ -53,7 +53,7 @@ Python/Pillow/xdg-utils에 의존합니다. AppImage도 Python을 내장하지 �
 - 생성·대결·진화·다듬기·태그 복사·원본/폴더 열기·ZIP 내보내기/불러오기와 종료 시 저장을 유지합니다.
 - Windows 릴리스 ZIP 자동 설치는 차단합니다. Linux 패키지를 설치하거나 소스를 git으로 갱신하세요.
 - 창 밖으로 PNG 파일을 끌어내는 기능은 미지원입니다. 원본 열기 또는 폴더 열기를 사용하세요.
-- 일반 브라우저에서 여는 독립 웹 서버 모드는 제공하지 않습니다.
+- 브라우저 실행은 아래의 «브라우저 웹 앱 · 모바일» 절차를 사용하세요.
 
 ```sh
 python3 _dev/tests/test_core.py
@@ -124,3 +124,61 @@ GitHub Actions `Linux Tauri`에서 위 검사 및 `.deb` 빌드를 실행하고 
 - 대결에서 고르면 두 조합의 Elo가 어떻게 바뀌었는지 1초 동안 보여 준 뒤 다음 대결로 넘어갑니다(비슷함 등으로 그대로면 +0, 평가중인 조합은 평가중).
   **블라인드** 토글을 켜면 티어·Elo·전적·태그를 ???로 가리고 그림만 보고 고르며, 고른 뒤 그 1초 동안 모두 공개합니다.
 - 탈락·제외된 조합은 지우지 않고 그림체 목록에 탈락 · 제외 표시로 남습니다. 부활, Elo 수정, 삭제, 전부 삭제가 가능합니다. 진화 평가·자리 찾기 중인 조합의 Elo를 고치면 그 순위표에도 바로 반영됩니다.
+## 브라우저 웹 앱 · 모바일
+
+브라우저용 실행에서는 Python 엔진을 HTTP 서버로 실행합니다. Tauri나 Node.js는 필요하지 않습니다.
+PC와 휴대폰이 같은 서버 데이터를 사용합니다. 사용자별 데이터가 분리되는 다중 사용자 서비스는 아닙니다.
+
+```sh
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements-linux.txt
+.venv/bin/python web_server.py --port 8080
+```
+
+`http://127.0.0.1:8080`에 접속하세요. 기본 데이터는 저장소의 `data/`이며,
+`--data-dir /경로` 또는 `NAI_DATA_DIR`로 변경할 수 있습니다. 서버를 종료하면 저장하고 생성 작업을 중단합니다.
+브라우저 창을 닫아도 서버에서 진행 중인 생성은 계속됩니다. 설정 입력은 서버에 즉시 저장됩니다.
+
+휴대폰/LAN 또는 리버스 프록시를 통한 접속:
+
+```sh
+export NAI_WEB_TOKEN='접속에 사용할 긴 비밀번호'
+export NAI_ALLOWED_HOSTS='192.168.0.10,nai.example.com'
+.venv/bin/python web_server.py --host 0.0.0.0 --port 8080
+```
+
+접속한 브라우저에서 비밀번호를 한 번 입력하면 HttpOnly·SameSite 쿠키로 인증됩니다.
+외부 바인딩 시 비밀번호 설정이 필수입니다. `NAI_ALLOWED_HOSTS`에는 실제 IP/도메인을 포트 없이 지정하고,
+리버스 프록시는 원래 Host를 전달해야 합니다. 인터넷 배포는 HTTPS 프록시를 사용하고
+`NAI_COOKIE_SECURE=1`을 설정하세요. 접속 비밀번호는 `NAI_WEB_TOKEN`, NovelAI 키는 앱 설정에서 입력하며 서로 별개입니다.
+서버의 API 키·이미지·설정 및 ZIP 백업은 로그인한 브라우저에서만 접근할 수 있습니다.
+
+Docker:
+
+```sh
+docker build -f Dockerfile.web -t nai-style-lab-web .
+docker run --rm -p 8080:8080 -v "$PWD/data:/data" \
+  -e NAI_WEB_TOKEN -e NAI_ALLOWED_HOSTS nai-style-lab-web
+```
+
+- 320px 휴대폰부터 사용 가능한 접이식 메뉴, 터치 크기 버튼, 반응형 설정·그림체·진화·다듬기 화면을 제공합니다.
+- 대결은 휴대폰에서도 두 이미지를 나란히 비교하며, 원본은 새 탭으로 엽니다.
+- ZIP 내보내기는 브라우저 다운로드, 불러오기는 파일 선택과 업로드입니다. 업로드 제한은 256 MiB입니다.
+  ZIP에는 NovelAI API 키도 포함될 수 있습니다.
+- 모바일에서는 메뉴에서 생성 진행 상태와 중단 버튼을 확인할 수 있습니다.
+- 웹 앱의 버전 갱신은 서버 배포로 적용합니다. 서버의 폴더나 외부 프로그램을 브라우저가 실행하지 않습니다.
+- Linux Tauri 모드도 그대로 사용할 수 있습니다. 같은 데이터 경로로 웹 서버와 Tauri를 동시에 실행하면 잠금으로 차단됩니다.
+
+```sh
+python3 _dev/tests/test_web.py
+```
+
+반응형 화면·메뉴·투표·ZIP 다운로드/업로드 브라우저 테스트:
+
+```sh
+npm ci
+npx playwright install --with-deps --only-shell chromium
+npm run test:web
+```
+
+테스트 서버는 임시 데이터와 가짜 이미지 생성기를 사용하며 NovelAI에 요청하지 않습니다.
