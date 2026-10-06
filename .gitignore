@@ -10,3 +10,8 @@
 # An update being installed (download, new release, old files): removed at the next launch.
 /.update/
 __pycache__/
+/node_modules/
+/src-tauri/target/
+/.venv/
+
+/src-tauri/gen/schemas/

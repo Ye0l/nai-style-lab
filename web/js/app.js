@@ -30,6 +30,7 @@ const app = {
   params: {},
   page: null,
   go(route, params = {}) {
+    closeNav();
     const query = new URLSearchParams(params).toString();
     const hash = `#/${route}${query ? `?${query}` : ''}`;
     if (location.hash === hash) mount();
@@ -50,6 +51,34 @@ const app = {
     document.getElementById('content').classList.toggle('fill', fill);
   },
 };
+
+// Drawer navigation on phone and tablet widths; desktop retains the fixed sidebar.
+const mobile = window.matchMedia('(max-width: 760px)');
+const navToggle = document.getElementById('nav-toggle');
+const navBackdrop = document.getElementById('nav-backdrop');
+function setNav(open) {
+  const showing = mobile.matches && open;
+  document.body.classList.toggle('nav-open', showing);
+  navToggle.setAttribute('aria-expanded', String(showing));
+  navToggle.setAttribute('aria-label', showing ? '메뉴 닫기' : '메뉴 열기');
+  document.getElementById('sidebar').inert = mobile.matches && !showing;
+  if (showing) document.querySelector('.sidebar .nav-item')?.focus();
+}
+function closeNav() { setNav(false); }
+navToggle.addEventListener('click', () => setNav(!document.body.classList.contains('nav-open')));
+navBackdrop.addEventListener('click', closeNav);
+mobile.addEventListener('change', closeNav);
+document.addEventListener('keydown', (event) => {
+  if (!document.body.classList.contains('nav-open')) return;
+  if (event.key === 'Escape') { closeNav(); navToggle.focus(); }
+  if (event.key === 'Tab') {
+    const items = [...document.getElementById('sidebar').querySelectorAll('button:not(:disabled), a[href], input')];
+    if (!items.length) return;
+    if (event.shiftKey && document.activeElement === items[0]) { event.preventDefault(); items.at(-1).focus(); }
+    else if (!event.shiftKey && document.activeElement === items.at(-1)) { event.preventDefault(); items[0].focus(); }
+  }
+});
+closeNav();
 
 let lastEvent = 0;
 let polling = null;
@@ -110,6 +139,7 @@ function renderSidebar() {
         h('div', { class: 'brand-sub' }, app.meta?.version ? `나만의 그림체 찾기 · v${app.meta.version}` : '나만의 그림체 찾기'))),
     nav,
     h('div', { class: 'sidebar-foot' }, jobCard, updateCard, subCard));
+  document.getElementById('mobile-title').textContent = PAGES[app.route]?.label || 'NAI Style Lab';
   placeToasts();
 }
 

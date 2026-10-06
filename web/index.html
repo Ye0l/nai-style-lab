@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>NAI Style Lab</title>
 <!-- PNGs so the taskbar gets a sharp icon (it does not scale the SVG well) -->
 <link rel="icon" type="image/png" sizes="512x512" href="/static/icon-512.png">
@@ -12,7 +12,9 @@
 <link rel="stylesheet" href="/static/app.css">
 </head>
 <body>
+<button id="nav-backdrop" class="nav-backdrop" aria-label="메뉴 닫기" tabindex="-1"></button>
 <div id="app">
+  <div class="mobile-bar"><button id="nav-toggle" class="btn icon-btn" aria-label="메뉴 열기" aria-controls="sidebar" aria-expanded="false">☰</button><strong id="mobile-title">NAI Style Lab</strong></div>
   <aside class="sidebar" id="sidebar"></aside>
   <div class="main">
     <header class="topbar" id="topbar"></header>
