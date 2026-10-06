@@ -164,7 +164,7 @@ fn main() {
             }
         })
         .setup(|app| {
-            let root = if cfg!(debug_assertions) {
+            let root = if tauri::is_dev() {
                 PathBuf::from(env!("CARGO_MANIFEST_DIR"))
                     .parent()
                     .unwrap()
